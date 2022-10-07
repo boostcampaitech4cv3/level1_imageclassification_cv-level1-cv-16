@@ -14,7 +14,6 @@ import torch.nn.functional as F
 
 from tqdm.auto import tqdm
 
-from torchvision import transforms
 
 from dataloader.dataloaders import *
 from model.models import *
@@ -29,37 +28,12 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 CFG = load_cfg()
 
-train_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Resize((int(CFG["IMG_SIZE"]*1.5), int(CFG["IMG_SIZE"]*1.5))),
-    transforms.RandomChoice([
-        transforms.Resize((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
-        transforms.CenterCrop((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
-        transforms.RandomCrop((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
-    ]),
-    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    transforms.RandomApply([
-        transforms.RandomRotation((-30, 30)),
-        transforms.RandomPerspective(distortion_scale=0.3, p=0.8),
-    ]),
-    transforms.RandomHorizontalFlip(0.3),
-    transforms.RandomInvert(0.2),
-])
+artists = Artists(CFG)
 
-test_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    transforms.Resize((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
-    transforms.RandomHorizontalFlip(0.3),
-    transforms.RandomInvert(0.2),
-])
-
-artists = Artists(seed=CFG["SEED"])
-
-train_dataset = CustomDataset(artists.train_img_paths, artists.train_labels, train_transform)
+train_dataset = CustomDataset(artists.train_img_paths, artists.train_labels, artists.train_transform)
 train_loader = CustomDataLoader(train_dataset, batch_size = CFG['BATCH_SIZE'], shuffle=True, num_workers=0)
 
-val_dataset = CustomDataset(artists.val_img_paths, artists.val_labels, test_transform)
+val_dataset = CustomDataset(artists.val_img_paths, artists.val_labels, artists.test_transform)
 val_loader = CustomDataLoader(val_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
 
 def train(model, optimizer, train_loader, test_loader, scheduler, device):
@@ -100,7 +74,7 @@ def train(model, optimizer, train_loader, test_loader, scheduler, device):
         if best_score < val_score:
             best_model = model
             best_score = val_score
-            model.save("model/model.pt")
+            torch.save(best_model, "model/model.pt")
 
     return best_model
 

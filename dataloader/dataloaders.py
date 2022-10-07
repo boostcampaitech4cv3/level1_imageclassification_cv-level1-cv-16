@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset, DataLoader
 import cv2
 import torch
+from torchvision import transforms
 
 class CustomDataset(Dataset):
     def __init__(self, img_paths, labels, transforms=None):
