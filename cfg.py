@@ -6,9 +6,9 @@ import numpy as np
 def load_cfg():
     CFG = {
         'IMG_SIZE':224,
-        'EPOCHS':10,
+        'EPOCHS':30,
         'LEARNING_RATE':3e-4,
-        'BATCH_SIZE':4,
+        'BATCH_SIZE':32,
         'SEED':41
     }
 

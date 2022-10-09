@@ -21,15 +21,15 @@ class Artists:
             #     transforms.RandomPerspective(distortion_scale=0.3, p=0.8),
             # ]),
             transforms.ConvertImageDtype(torch.float32),    # ufloat타입(normalize 등..)을 필요로 하는 layer에 대한 에러 방지
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             transforms.RandomHorizontalFlip(0.3),
             transforms.RandomInvert(0.2),
         ])
 
         self.test_transform = transforms.Compose([
             transforms.ToTensor(),
-            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             transforms.Resize((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             transforms.RandomHorizontalFlip(0.3),
             transforms.RandomInvert(0.2),
         ])

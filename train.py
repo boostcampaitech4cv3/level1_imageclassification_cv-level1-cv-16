@@ -86,7 +86,7 @@ pprint.pprint(timm.models.list_models())
 
 model = BaseModel(num_classes=len(artists.le.classes_))
 model.eval()
-optimizer = torch.optim.Adam(params = model.parameters(), lr = CFG["LEARNING_RATE"])
+optimizer = torch.optim.RAdam(params = model.parameters(), lr = CFG["LEARNING_RATE"])
 scheduler = None
 
 infer_model = train(model, optimizer, train_loader, val_loader, scheduler, device)
