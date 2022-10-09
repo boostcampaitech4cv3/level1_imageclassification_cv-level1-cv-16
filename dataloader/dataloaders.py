@@ -13,7 +13,6 @@ class CustomDataset(Dataset):
         img_path = self.img_paths[index]
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
         if self.transforms is not None:
             image = self.transforms(image)
             image = torch.tensor(image)

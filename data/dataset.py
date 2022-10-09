@@ -1,4 +1,5 @@
 import pandas as pd
+import torch
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
@@ -9,24 +10,25 @@ class Artists:
 
         self.train_transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Resize((int(CFG["IMG_SIZE"] * 1.5), int(CFG["IMG_SIZE"] * 1.5))),
+            transforms.Resize((int(CFG["IMG_SIZE"]*2), int(CFG["IMG_SIZE"]*2))),
+            transforms.ConvertImageDtype(torch.uint8),      # uint 타입을 필요로 하는 layer에 대한 에러 방지
             transforms.RandomChoice([
-                transforms.Resize((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
-                transforms.CenterCrop((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
-                transforms.RandomCrop((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
+                transforms.CenterCrop((int(CFG["IMG_SIZE"]), int(CFG["IMG_SIZE"]))),
+                transforms.RandomCrop((int(CFG["IMG_SIZE"]), int(CFG["IMG_SIZE"]))),
             ]),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-            transforms.RandomApply([
-                transforms.RandomRotation((-30, 30)),
-                transforms.RandomPerspective(distortion_scale=0.3, p=0.8),
-            ]),
+            # transforms.RandomApply([
+            #     transforms.RandomRotation((-30, 30)),
+            #     transforms.RandomPerspective(distortion_scale=0.3, p=0.8),
+            # ]),
+            transforms.ConvertImageDtype(torch.float32),    # ufloat타입(normalize 등..)을 필요로 하는 layer에 대한 에러 방지
+            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             transforms.RandomHorizontalFlip(0.3),
             transforms.RandomInvert(0.2),
         ])
 
         self.test_transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             transforms.Resize((CFG["IMG_SIZE"], CFG["IMG_SIZE"])),
             transforms.RandomHorizontalFlip(0.3),
             transforms.RandomInvert(0.2),
