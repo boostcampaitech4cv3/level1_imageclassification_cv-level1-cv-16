@@ -65,7 +65,7 @@ if __name__ == "__main__":
     model = torch.load("model/model.pt")
     artists = Artists(CFG)
 
-    test_dataset = CustomDataset(artists.test_img_paths, None, artists.test_transform)
+    test_dataset = CustomDataset(artists.test_img_paths, None, artists.test_transforms)
     test_loader = DataLoader(test_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
 
     preds = inference(model, test_loader, device)

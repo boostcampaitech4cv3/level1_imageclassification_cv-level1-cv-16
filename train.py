@@ -30,10 +30,10 @@ CFG = load_cfg()
 
 artists = Artists(CFG)
 
-train_dataset = CustomDataset(artists.train_img_paths, artists.train_labels, artists.train_transform)
+train_dataset = CustomDataset(artists.train_img_paths, artists.train_labels, artists.train_transforms)
 train_loader = CustomDataLoader(train_dataset, batch_size = CFG['BATCH_SIZE'], shuffle=True, num_workers=0)
 
-val_dataset = CustomDataset(artists.val_img_paths, artists.val_labels, artists.test_transform)
+val_dataset = CustomDataset(artists.val_img_paths, artists.val_labels, artists.val_transforms)
 val_loader = CustomDataLoader(val_dataset, batch_size=CFG['BATCH_SIZE'], shuffle=False, num_workers=0)
 
 def train(model, optimizer, train_loader, test_loader, scheduler, device):
