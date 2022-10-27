@@ -1,0 +1,6 @@
+{
+    "IMG_SIZE": 224,
+    "BATCH_SIZE": 512,
+    "LEARNING_RATE": 3e-4,
+    "EPOCHS": 30
+}
