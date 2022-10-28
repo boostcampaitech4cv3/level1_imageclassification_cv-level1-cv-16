@@ -1,6 +1,15 @@
 {
-    "IMG_SIZE": 224,
-    "BATCH_SIZE": 512,
+    
     "LEARNING_RATE": 3e-4,
-    "EPOCHS": 30
+    "BATCH_SIZE": 64,
+    "IMG_SIZE": 224,
+    "age":{
+        "EPOCHS": 100
+    },
+    "gender":{
+        "EPOCHS": 50
+    },
+    "mask":{
+        "EPOCHS": 30
+    }
 }

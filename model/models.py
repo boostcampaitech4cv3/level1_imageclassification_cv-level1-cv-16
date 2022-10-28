@@ -6,7 +6,7 @@ import torchvision.models as models
 class Age_Model(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.backbone = models.mobilenet_v3_large(pretrained=True)
+        self.backbone = models.efficientnet_v2_l(pretrained=True)
 
         self.fc1 = nn.Linear(1000, 256)
         self.dropout1 = nn.Dropout(0.4)
@@ -24,7 +24,7 @@ class Age_Model(nn.Module):
 class Gender_Model(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.backbone = models.mobilenet_v3_large(pretrained=True)
+        self.backbone = models.efficientnet_v2_l(pretrained=True)
 
         self.fc1 = nn.Linear(1000, 256)
         self.dropout1 = nn.Dropout(0.4)
@@ -42,7 +42,7 @@ class Gender_Model(nn.Module):
 class Mask_Model(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.backbone = models.mobilenet_v3_large(pretrained=True)
+        self.backbone = models.efficientnet_v2_l(pretrained=True)
 
         self.fc1 = nn.Linear(1000, 256)
         self.dropout1 = nn.Dropout(0.4)
@@ -60,6 +60,7 @@ class Mask_Model(nn.Module):
     
 class Ensemble(nn.Module):
     def __init__(self, exp):
+        super().__init__()
         self.age = torch.load(f"exp/{exp}/age/best.pt")
         self.gender = torch.load(f"exp/{exp}/gender/best.pt")
         self.mask = torch.load(f"exp/{exp}/mask/best.pt")

@@ -1,6 +1,7 @@
 import json
 from dataset.dataset import Age_Dataset, Gender_Dataset, Mask_Dataset
 from model.models import *
+import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
@@ -49,7 +50,7 @@ def train(mtype, model, optimizer, train_loader, test_loader, scheduler, device)
     best_score = 0
     best_model = None
 
-    for epoch in range(1, cfg["EPOCHS"] + 1):
+    for epoch in range(1, cfg[mtype]["EPOCHS"] + 1):
         model.train()
         train_loss = []
         for img, label in tqdm(iter(train_loader)):
@@ -79,7 +80,7 @@ def train(mtype, model, optimizer, train_loader, test_loader, scheduler, device)
         if best_score < val_score:
             best_model = model
             best_score = val_score
-            torch.save(best_model, f"/exp/{last}/{mtype}/best.pt")
+            torch.save(best_model, f"exp/{last}/{mtype}/best.pt")
 
     return best_model
 
@@ -95,8 +96,10 @@ def exp_generator():
         os.mkdir("exp/0/mask")
         last = 0
     else:
-        last = list(map(int, sorted(exp)))[-1]
-        last += 1
+        last = list(map(int, exp))
+        last.sort()
+        last = last[-1]
+        last+= 1
         
         os.mkdir(f"exp/{last}")
         os.mkdir(f"exp/{last}/age")
@@ -124,19 +127,27 @@ train_mask_loader = DataLoader(train_mask_dataset, batch_size = cfg['BATCH_SIZE'
 val_mask_dataset = Mask_Dataset(cfg, val=True)
 val_mask_loader = DataLoader(val_mask_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)
 
-last = exp_generator()
+# last = exp_generator()
+last = 5
 
 scheduler = None
-model = Age_Model(num_classes=train_age_dataset.num_classes)
-optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
-age_model = train("age", model, optimizer, train_age_loader, val_age_loader, scheduler, device)
+
+# print(">> Age Clasification -----------------------")
+# model = Age_Model(num_classes=train_age_dataset.num_classes)
+# optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
+# age_model = train("age", model, optimizer, train_age_loader, val_age_loader, scheduler, device)
+# print("--------------------------------------------")
 
 
-model = Gender_Model(num_classes=train_gender_dataset.num_classes)
-optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
-gender_model = train("gender", model, optimizer, train_gender_loader, val_gender_loader, scheduler, device)
+# print(">> Gender Clasification -----------------------")
+# model = Gender_Model(num_classes=train_gender_dataset.num_classes)
+# optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
+# gender_model = train("gender", model, optimizer, train_gender_loader, val_gender_loader, scheduler, device)
+# print("--------------------------------------------")
 
 
+print(">> Mask Clasification -----------------------")
 model = Mask_Model(num_classes=train_mask_dataset.num_classes)
 optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
 mask_model = train("mask", model, optimizer, train_mask_loader, val_mask_loader, scheduler, device)
+print("--------------------------------------------")
