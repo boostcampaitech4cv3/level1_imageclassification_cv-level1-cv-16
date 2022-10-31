@@ -101,7 +101,7 @@ class CustomDataset(Dataset):
         
         df["path"] = df["path"].apply(lambda x: f"{self.train_dir}/images/{x}/")
         df["file"] = df.apply(lambda x: list(map(os.path.basename, glob(f"{x['path']}/*"))), axis=1)
-        bins = [0, 29, 59, 60] ## 이상 미만 vs 초과 이하 구분 필요
+        bins = [0,  29, 59, 60] ## 이상 미만 vs 초과 이하 구분 필요
         bins_label = [0, 1, 2]
         df["Age"] = pd.cut(df["age"], bins, labels=bins_label)
         df["Gender"] = df["gender"].replace({'male':0,'female':1})
@@ -157,10 +157,12 @@ class Age_Dataset(CustomDataset):
         dataset = dataset.rename(columns={"Age": "label"})
         train_df, val_df = train_test_split(dataset, test_size=0.2, random_state=41)
         
+#         train_df = self.undersampling(dataset)
+#         print(train_df.groupby('label', as_index=False).count())
         
         train_df = train_df.sort_index()
         val_df = val_df.sort_index()
-        
+
         self.transforms = self.transformation(val)
         
         if not val:
@@ -168,6 +170,13 @@ class Age_Dataset(CustomDataset):
         else:
             return val_df
     
+    def undersampling(self, df):
+        nMax = 192 #change to 2500
+        res = df.groupby('label', as_index=False).apply(lambda x: x.sample(n=min(nMax, len(x))))
+        res = pd.DataFrame({"path": res["path"].values, "label": res["label"].values})
+        res = res.sample(frac=1)
+        
+        return res
 
     
     
@@ -190,7 +199,7 @@ class Gender_Dataset(CustomDataset):
         dataset = self.dataset.drop(["file", "Mask", "Age"], axis=1)
         dataset = dataset.rename(columns={"Gender": "label"})
         train_df, val_df = train_test_split(dataset, test_size=0.2, random_state=41)
-        
+              
         
         train_df = train_df.sort_index()
         val_df = val_df.sort_index()
@@ -202,21 +211,6 @@ class Gender_Dataset(CustomDataset):
         else:
             return val_df
     
-#     def transformation(self, val):
-#         if not val:
-#             return A.Compose([
-#                 A.RandomResizedCrop(self.cfg["IMG_SIZE"], self.cfg["IMG_SIZE"], scale=(0.5, 1.0)),
-#                 A.RandomHorizontalFlip(0.3),
-#                 A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-#                 ToTensorV2()
-#             ])
-
-#         else:
-#             return A.Compose([
-#                 A.Resize(self.cfg["IMG_SIZE"], self.cfg["IMG_SIZE"]),
-#                 A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-#                 ToTensorV2()
-#             ])
         
     
 class Mask_Dataset(CustomDataset):
@@ -252,27 +246,9 @@ class Mask_Dataset(CustomDataset):
         else:
             return val_df
     
-#     def transformation(self, val):
-#         if not val:
-#             return A.Compose([
-#                 A.ToGray(p=1),
-#                 A.RandomResizedCrop(self.cfg["IMG_SIZE"], self.cfg["IMG_SIZE"], scale=(0.5, 1.0)),
-#                 A.RandomHorizontalFlip(0.3),
-#                 A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-#                 ToTensorV2()
-#             ])
-
-#         else:
-#             return A.Compose([
-#                 A.ToGray(p=1),
-#                 A.Resize(self.cfg["IMG_SIZE"], self.cfg["IMG_SIZE"]),
-#                 A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-#                 ToTensorV2()
-#             ])
         
     
 if __name__ == "__main__":
     import json
     cfg = json.load(open("../cfg.json", "r"))
     dataset = Age_Dataset(cfg)
-    cv2.imwrite("hi.jpg", dataset[2][0])

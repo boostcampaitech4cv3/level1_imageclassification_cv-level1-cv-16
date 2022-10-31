@@ -8,12 +8,26 @@ import numpy as np
 from sklearn.metrics import f1_score
 import os
 
+import random
+import torch.backends.cudnn as cudnn
+
+from loss.focal import Focal_Loss
+
 import warnings
 warnings.filterwarnings(action='ignore')
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 cfg = json.load(open("cfg.json", "r"))
+
+torch.manual_seed(cfg["SEED"])
+torch.cuda.manual_seed(cfg["SEED"])
+torch.cuda.manual_seed_all(cfg["SEED"])
+np.random.seed(cfg["SEED"])
+cudnn.benchmark = False
+cudnn.deterministic = True
+random.seed(cfg["SEED"])
+
 
 def competition_metric(true, pred):
     return f1_score(true, pred, average="macro")
@@ -45,7 +59,7 @@ def validation(model, criterion, test_loader, device):
 def train(mtype, model, optimizer, train_loader, test_loader, scheduler, device):
     model.to(device)
 
-    criterion = nn.CrossEntropyLoss().to(device)
+    criterion = Focal_Loss().to(device)
 
     best_score = 0
     best_model = None
@@ -127,27 +141,29 @@ train_mask_loader = DataLoader(train_mask_dataset, batch_size = cfg['BATCH_SIZE'
 val_mask_dataset = Mask_Dataset(cfg, val=True)
 val_mask_loader = DataLoader(val_mask_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)
 
-# last = exp_generator()
-last = 5
+last = exp_generator()
+# last = 12
 
 scheduler = None
 
-# print(">> Age Clasification -----------------------")
-# model = Age_Model(num_classes=train_age_dataset.num_classes)
-# optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
-# age_model = train("age", model, optimizer, train_age_loader, val_age_loader, scheduler, device)
-# print("--------------------------------------------")
+print(">> Age Clasification -----------------------")
+model = Age_Model(num_classes=train_age_dataset.num_classes)
+optimizer = torch.optim.NAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
+age_model = train("age", model, optimizer, train_age_loader, val_age_loader, scheduler, device)
+print("--------------------------------------------")
+torch.cuda.empty_cache()
 
-
-# print(">> Gender Clasification -----------------------")
-# model = Gender_Model(num_classes=train_gender_dataset.num_classes)
-# optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
-# gender_model = train("gender", model, optimizer, train_gender_loader, val_gender_loader, scheduler, device)
-# print("--------------------------------------------")
+print(">> Gender Clasification -----------------------")
+model = Gender_Model(num_classes=train_gender_dataset.num_classes)
+optimizer = torch.optim.NAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
+gender_model = train("gender", model, optimizer, train_gender_loader, val_gender_loader, scheduler, device)
+print("--------------------------------------------")
+torch.cuda.empty_cache()
 
 
 print(">> Mask Clasification -----------------------")
 model = Mask_Model(num_classes=train_mask_dataset.num_classes)
-optimizer = torch.optim.RAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
+optimizer = torch.optim.NAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
 mask_model = train("mask", model, optimizer, train_mask_loader, val_mask_loader, scheduler, device)
 print("--------------------------------------------")
+torch.cuda.empty_cache()

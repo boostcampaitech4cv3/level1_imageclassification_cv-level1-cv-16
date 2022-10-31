@@ -1,8 +1,9 @@
 {
     
     "LEARNING_RATE": 3e-4,
-    "BATCH_SIZE": 64,
-    "IMG_SIZE": 224,
+    "BATCH_SIZE": 128,
+    "IMG_SIZE": 384,
+    "SEED": 41,
     "age":{
         "EPOCHS": 100
     },
