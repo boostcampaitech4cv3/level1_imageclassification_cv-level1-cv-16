@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    model = Ensemble(29) ## exp dir
+    model = Ensemble(20) ## exp dir
     
     test_dataset = TestDataset(cfg)
     test_loader = DataLoader(test_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)

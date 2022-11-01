@@ -1,7 +1,7 @@
 {
     
-    "LEARNING_RATE": 3e-4,
-    "BATCH_SIZE": 128,
+    "LEARNING_RATE": 0.01,
+    "BATCH_SIZE": 16,
     "IMG_SIZE": 384,
     "SEED": 41,
     "age":{

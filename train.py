@@ -10,8 +10,10 @@ import os
 
 import random
 import torch.backends.cudnn as cudnn
+from ema_pytorch import EMA
+from optim.sam import SAM
 
-from loss.focal import Focal_Loss
+from loss.focal import FocalLossWithSmoothing
 
 import warnings
 warnings.filterwarnings(action='ignore')
@@ -56,10 +58,9 @@ def validation(model, criterion, test_loader, device):
     val_f1 = competition_metric(true_labels, model_preds)
     return np.mean(val_loss), val_f1
 
-def train(mtype, model, optimizer, train_loader, test_loader, scheduler, device):
+def train(mtype, model, optimizer, criterion, train_loader, test_loader, scheduler, device):
     model.to(device)
 
-    criterion = Focal_Loss().to(device)
 
     best_score = 0
     best_model = None
@@ -73,11 +74,19 @@ def train(mtype, model, optimizer, train_loader, test_loader, scheduler, device)
             optimizer.zero_grad()
 
             model_pred = model(img)
-
-            loss = criterion(model_pred, label)
-
+ 
+            loss = criterion(model_pred, label)  # use this loss for any training statistics
             loss.backward()
-            optimizer.step()
+            optimizer.first_step(zero_grad=True)
+
+            # second forward-backward pass
+            criterion(model(img), label).backward()  # make sure to do a full forward pass
+            optimizer.second_step(zero_grad=True)
+
+#             loss = criterion(model_pred, label)
+#             loss.backward()
+#             optimizer.step(closure)
+#             ema.update()
 
             train_loss.append(loss.item())
 
@@ -148,22 +157,28 @@ scheduler = None
 
 print(">> Age Clasification -----------------------")
 model = Age_Model(num_classes=train_age_dataset.num_classes)
-optimizer = torch.optim.NAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
-age_model = train("age", model, optimizer, train_age_loader, val_age_loader, scheduler, device)
+criterion = FocalLossWithSmoothing(train_age_dataset.num_classes, 3, 0.1).to(device)
+base_optimizer = torch.optim.SGD
+optimizer = SAM(model.parameters(), base_optimizer, lr=0.001, momentum=0.9, nesterov = True)
+age_model = train("age", model, optimizer, criterion, train_age_loader, val_age_loader, scheduler, device)
 print("--------------------------------------------")
 torch.cuda.empty_cache()
 
 print(">> Gender Clasification -----------------------")
 model = Gender_Model(num_classes=train_gender_dataset.num_classes)
-optimizer = torch.optim.NAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
-gender_model = train("gender", model, optimizer, train_gender_loader, val_gender_loader, scheduler, device)
+criterion = FocalLossWithSmoothing(train_gender_dataset.num_classes, 2, 0.2).to(device)
+base_optimizer = torch.optim.SGD
+optimizer = SAM(model.parameters(), base_optimizer, lr=0.001, momentum=0.9, nesterov = True)
+gender_model = train("gender", model, optimizer, criterion, train_gender_loader, val_gender_loader, scheduler, device)
 print("--------------------------------------------")
 torch.cuda.empty_cache()
 
 
 print(">> Mask Clasification -----------------------")
 model = Mask_Model(num_classes=train_mask_dataset.num_classes)
-optimizer = torch.optim.NAdam(params = model.parameters(), lr = cfg["LEARNING_RATE"])
-mask_model = train("mask", model, optimizer, train_mask_loader, val_mask_loader, scheduler, device)
+criterion = FocalLossWithSmoothing(train_mask_dataset.num_classes, 2, 0.1).to(device)
+base_optimizer = torch.optim.SGD
+optimizer = SAM(model.parameters(), base_optimizer, lr=0.001, momentum=0.9, nesterov = True)
+mask_model = train("mask", model, optimizer, criterion, train_mask_loader, val_mask_loader, scheduler, device)
 print("--------------------------------------------")
 torch.cuda.empty_cache()

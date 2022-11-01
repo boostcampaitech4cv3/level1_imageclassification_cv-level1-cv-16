@@ -6,8 +6,9 @@ import torchvision.models as models
 class Age_Model(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.backbone = models.mobilenet_v3_large(pretrained=True)
-
+#         self.backbone = models.mobilenet_v3_large(pretrained=True)
+        self.backbone = models.efficientnet_v2_l(pretrained=True)
+    
         self.fc1 = nn.Linear(1000, 256)
         self.dropout1 = nn.Dropout(0.3)
         self.fc2 = nn.Linear(256, 43)  # age
@@ -27,7 +28,8 @@ class Age_Model(nn.Module):
 class Gender_Model(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.backbone = models.mobilenet_v3_large(pretrained=True)
+#         self.backbone = models.mobilenet_v3_large(pretrained=True)
+        self.backbone = models.efficientnet_v2_l(pretrained=True)
 
         self.fc1 = nn.Linear(1000, 256)
         self.dropout1 = nn.Dropout(0.4)
@@ -44,8 +46,8 @@ class Gender_Model(nn.Module):
 class Mask_Model(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.backbone = models.mobilenet_v3_large(pretrained=True)
-#         self.backbone = timm.create_model('swin_large_patch4_window12_384_in22k', pretrained=True)
+#         self.backbone = models.mobilenet_v3_large(pretrained=True)
+        self.backbone = models.efficientnet_v2_l(pretrained=True)
 
         self.fc1 = nn.Linear(1000, 256)
         self.dropout1 = nn.Dropout(0.4)
@@ -73,3 +75,6 @@ class Ensemble(nn.Module):
         mask = self.mask(x)
         
         return age, gender, mask
+    
+if __name__ == "__main__":
+    model = Age_Model(3)
