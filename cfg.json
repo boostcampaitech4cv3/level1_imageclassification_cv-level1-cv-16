@@ -12,7 +12,7 @@
         "BATCH_SIZE": 16
     },
     "mask":{
-        "EPOCHS": 30,
+        "EPOCHS": 20,
         "BATCH_SIZE": 128
     },
     "test":{

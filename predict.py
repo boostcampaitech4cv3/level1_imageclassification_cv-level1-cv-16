@@ -1,4 +1,5 @@
-from dataset.dataset import TestDataset, CustomDataset
+from dataset.dataset import *
+from dataset.transformation import *
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
@@ -46,12 +47,15 @@ if __name__ == "__main__":
     cfg = json.load(open("cfg.json", "r"))
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-    model = Ensemble(15) ## exp dir
     
-    test_dataset = TestDataset()
+    dataset = HumanInfo(test=True)
+    val_transform = Val_Transform()
+    
+    model = Ensemble(2) ## exp dir
+    
+    test_dataset = TestDataset(dataset.test, [val_transform.age, val_transform.gender, val_transform.mask])
     test_loader = DataLoader(test_dataset, batch_size=cfg['test']['BATCH_SIZE'], shuffle=False, num_workers=0)
 
     preds = inference(model, test_loader, device)
     
-    test_dataset.submit(preds)
+    test_dataset.submit(dataset.test, preds)

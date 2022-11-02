@@ -2,6 +2,8 @@ from dataset.dataset import Viz_Dataset
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
+from dataset.dataset import *
+from dataset.transformation import *
 
 from model.models import *
 import json
@@ -49,8 +51,7 @@ def inference(model, custom_loader, device):
                     cv2.imwrite(f"Error/mask/{path}-{mp}.jpg", tmp)
             
 
-#     model_preds = list(map(lambda preds: calc_ans(*preds), list(zip(age_preds, gender_preds, mask_preds))))
-    return model_preds
+
 
 def calc_ans(age, gender, mask):
     return mask*6 + gender*3 + age
@@ -60,14 +61,18 @@ if __name__ == "__main__":
     warnings.filterwarnings(action='ignore')
     
     cfg = json.load(open("cfg.json", "r"))
-
+    
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-    model = Ensemble(15) ## exp dir
     
-    custom_dataset = Viz_Dataset(True)
-    custom_loader = DataLoader(custom_dataset, batch_size=cfg['test']['BATCH_SIZE'], shuffle=False, num_workers=0)
+    dataset = HumanInfo()
+    val_transform = Val_Transform()
     
-    preds = inference(model, custom_loader, device)
+    df = pd.read_csv("/opt/ml/input/data/train/train.csv")
+    
+    viz_dataset = Viz_Dataset(df, [val_transform.age, val_transform.gender, val_transform.mask])
+    viz_loader = DataLoader(viz_dataset, batch_size=cfg['test']['BATCH_SIZE'], shuffle=False, num_workers=0)
+    
+    model = Ensemble(2) ## exp dir
+    inference(model, viz_loader, device)
     
 #     test_dataset.submit(preds)
