@@ -11,21 +11,20 @@ from torch.utils.data import Dataset
 import os
 import random
 import json
-
 import numpy as np
 
+from .augmentation import undercrop
+
+cfg = json.load(open("cfg.json", "r"))
         
 class CustomDataset(Dataset):
-    def __init__(self, cfg):
-        self.cfg = cfg
-        
+    def __init__(self):        
         self.img_dir = "/opt/ml/input/data"
         self.train_dir = f"{self.img_dir}/train"
         
         train_df = pd.read_csv(f"{self.train_dir}/train.csv")
         self.dataset = self._preprocess(train_df)
         
-        self.transforms = self.transformation()
         
         self.img_paths, self.labels = self.get_data(self.dataset)
 
@@ -72,33 +71,12 @@ class CustomDataset(Dataset):
         if infer:
             return df['path'].values
         return df['path'].values, list(zip(df['Age'].values, df['Gender'].values, df['Mask'].values))
-    
-    def transformation(self, val=False):
-        if not val:
-            return A.Compose([
-                A.ToGray(p=1),
-                A.CenterCrop(p=1, height=384, width=384),
-                A.RandomResizedCrop(self.cfg["IMG_SIZE"], self.cfg["IMG_SIZE"], scale=(0.8, 1.0)),
-                A.Sharpen(alpha=(0.5, 1), p=1),
-                A.HorizontalFlip(p=0.3),
-                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0, always_apply=False, p=1.0),
-                ToTensorV2()
-            ])
-
-        else:
-            return A.Compose([
-                A.ToGray(p=1),
-                A.Resize(int(self.cfg["IMG_SIZE"]), int(self.cfg["IMG_SIZE"])),
-                A.Sharpen(alpha=0.7, p=1),
-                A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-                ToTensorV2()
-            ])
         
         
         
 class Age_Dataset(CustomDataset):
-    def __init__(self, cfg, val=False):
-        super().__init__(cfg)
+    def __init__(self, val=False):
+        super().__init__()
         self.num_classes = 3
         
         self.dataset = self.preprocess(val)
@@ -113,11 +91,9 @@ class Age_Dataset(CustomDataset):
         
     def preprocess(self, val):
         dataset = self.dataset.drop(["file", "Mask", "Gender"], axis=1)
-#         dataset = dataset.rename(columns={"Age": "label"})
         train_df, val_df = train_test_split(dataset, test_size=0.2, random_state=41)
         
 #         train_df = self.undersampling(dataset)
-#         print(train_df.groupby('label', as_index=False).count())
         
         train_df = train_df.sort_index()
         val_df = val_df.sort_index()
@@ -141,12 +117,32 @@ class Age_Dataset(CustomDataset):
         res = res.sample(frac=1)
         
         return res
+    
+    def transformation(self, val=False):
+        if not val:
+            return A.Compose([
+                A.ToGray(p=1),
+                A.Lambda(image=undercrop),
+                A.Sharpen(alpha=(0.5, 1), p=1),
+                A.HorizontalFlip(p=0.3),
+                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0, always_apply=False, p=1.0),
+                ToTensorV2()
+            ])
+
+        else:
+            return A.Compose([
+                A.ToGray(p=1),
+                A.Lambda(image=undercrop),
+                A.Sharpen(alpha=0.7, p=1),
+                A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+                ToTensorV2()
+            ])
 
     
     
 class Gender_Dataset(CustomDataset):
-    def __init__(self, cfg, val=False):
-        super().__init__(cfg)
+    def __init__(self, val=False):
+        super().__init__()
         self.num_classes = 2
         
         self.df = self.preprocess(val)
@@ -179,11 +175,31 @@ class Gender_Dataset(CustomDataset):
             return train_df
         else:
             return val_df
+        
+    def transformation(self, val=False):
+        if not val:
+            return A.Compose([
+                A.ToGray(p=1),
+                A.CenterCrop(cfg["IMG_SIZE"], cfg["IMG_SIZE"]),
+                A.Sharpen(alpha=(0.5, 1), p=1),
+                A.HorizontalFlip(p=0.3),
+                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0, always_apply=False, p=1.0),
+                ToTensorV2()
+            ])
+
+        else:
+            return A.Compose([
+                A.ToGray(p=1),
+                A.CenterCrop(cfg["IMG_SIZE"], cfg["IMG_SIZE"]),
+                A.Sharpen(alpha=0.7, p=1),
+                A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+                ToTensorV2()
+            ])
      
     
 class Mask_Dataset(CustomDataset):
-    def __init__(self, cfg, val=False):
-        super().__init__(cfg)
+    def __init__(self, val=False):
+        super().__init__()
         self.num_classes = 3
         
         self.df = self.preprocess(val)
@@ -202,6 +218,7 @@ class Mask_Dataset(CustomDataset):
     def preprocess(self, val):
         dataset = self.dataset.drop(["Age", "Gender"], axis=1)
         dataset = dataset.apply(pd.Series.explode).reset_index()    ## spread file and label => 2700 * 7 = 18900
+        dataset['path'] = dataset.apply(lambda x: f"{x['path']}/{x['file']}", axis = 1)
         
         train_df, val_df = train_test_split(dataset, test_size=0.2, random_state=41)
         
@@ -215,27 +232,51 @@ class Mask_Dataset(CustomDataset):
             return train_df
         else:
             return val_df
+    
         
+    def transformation(self, val=False):
+        if not val:
+            return A.Compose([
+                A.ToGray(p=1),
+                A.RandomResizedCrop(cfg["IMG_SIZE"], cfg["IMG_SIZE"], scale=(0.8, 1.0)),
+                A.HorizontalFlip(p=0.3),
+                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), max_pixel_value=255.0, always_apply=False, p=1.0),
+                ToTensorV2()
+            ])
+
+        else:
+            return A.Compose([
+                A.ToGray(p=1),
+                A.Resize(cfg["IMG_SIZE"], cfg["IMG_SIZE"]),
+                A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+                ToTensorV2()
+            ])
+
 class Viz_Dataset(CustomDataset):
-    def __init__(self, cfg, val=False):
-        super().__init__(cfg)
+    def __init__(self, val=False):
+        super().__init__()
         self.num_classes = 18
         
         self.df = self.preprocess(val)
         
         self.img_paths, self.labels = self.get_data(self.df)
+        
+        self.age_transforms = Age_Dataset.transformation(True)
+        self.gender_transforms = Gender_Dataset.transformation(True)
+        self.mask_transforms = Mask_Dataset.transformation(True)
     
     def __getitem__(self, index):
         img_path = self._get_method(index)
         image = cv2.imread(img_path)
         
-        if self.transforms is not None:
-            image = self.transforms(image=image)['image']
+        age_image = self.age_transforms(image=image)['image']
+        gender_image = self.gender_transforms(image=image)['image']
+        mask_image = self.mask_transforms(image=image)['image']
 
         if self.labels is not None:
             label = self.labels[index]
 
-            return image, label, img_path
+            return age_image, gender_image, mask_image, label, img_path
         else:
             return image
         
@@ -253,32 +294,21 @@ class Viz_Dataset(CustomDataset):
         dataset = dataset.apply(pd.Series.explode).reset_index()    ## spread file and label => 2700 * 7 = 18900
         
         dataset['path'] = dataset.apply(lambda x: f"{x['path']}/{x['file']}", axis = 1)
-        
-        train_df, val_df = train_test_split(dataset, test_size=0.2, random_state=41)
-        
-        train_df = train_df.sort_index()
-        val_df = val_df.sort_index()
     
+        return dataset
         
-        self.transforms = self.transformation(val)
-        
-        if not val:
-            return train_df
-        else:
-            return val_df
-    
-
 
 class TestDataset(Dataset):
-    def __init__(self, cfg):
-        self.cfg = cfg
+    def __init__(self):
         self.img_dir = "/opt/ml/input/data"
         self.test_dir = f"{self.img_dir}/eval"
         
         self.test_df = pd.read_csv(f"{self.test_dir}/info.csv")
         self.img_paths = self.get_data(self.test_df)
         
-        self.transforms = self.transformation()
+        self.age_transforms = Age_Dataset.transformation(True)
+        self.gender_transforms = Gender_Dataset.transformation(True)
+        self.mask_transforms = Mask_Dataset.transformation(True)
         
     def __len__(self):
         return len(self.img_paths)
@@ -289,22 +319,16 @@ class TestDataset(Dataset):
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
-        if self.transforms is not None:
-            image = self.transforms(image=image)['image']
-            
-        return image
+        
+        age_image = self.age_transforms(image=image)['image']
+        gender_image = self.gender_transforms(image=image)['image']
+        mask_image = self.mask_transforms(image=image)['image']
+
+        return age_image, gender_image, mask_image
         
     def get_data(self, df):
         return df["ImageID"].values
-    
-    def transformation(self):
-        return A.Compose([
-                A.ToGray(p=1),
-                A.Resize(int(self.cfg["IMG_SIZE"]), int(self.cfg["IMG_SIZE"])),
-                A.Sharpen(alpha=0.7, p=1),
-                A.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-                ToTensorV2()
-            ])
+
         
     def submit(self, preds):
         self.test_df['ans'] = preds

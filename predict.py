@@ -16,10 +16,12 @@ def inference(model, test_loader, device):
     mask_preds = []
 
     with torch.no_grad():
-        for img in tqdm(iter(test_loader)):
-            img = img.float().to(device)
+        for age_img, gender_img, mask_img in tqdm(iter(test_loader)):
+            age_img = age_img.float().to(device)
+            gender_img = gender_img.float().to(device)
+            mask_img = mask_img.float().to(device)
 
-            age_pred, gender_pred, mask_pred = model(img)
+            age_pred, gender_pred, mask_pred = model(age_img, gender_img, mask_img)
             
             age_preds += age_pred.argmax(1).detach().cpu().numpy().tolist()
             gender_preds += gender_pred.argmax(1).detach().cpu().numpy().tolist()
@@ -45,10 +47,10 @@ if __name__ == "__main__":
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    model = Ensemble(20) ## exp dir
+    model = Ensemble(15) ## exp dir
     
-    test_dataset = TestDataset(cfg)
-    test_loader = DataLoader(test_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)
+    test_dataset = TestDataset()
+    test_loader = DataLoader(test_dataset, batch_size=cfg['test']['BATCH_SIZE'], shuffle=False, num_workers=0)
 
     preds = inference(model, test_loader, device)
     

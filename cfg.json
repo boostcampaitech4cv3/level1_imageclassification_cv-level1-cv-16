@@ -1,16 +1,21 @@
 {
     
     "LEARNING_RATE": 0.01,
-    "BATCH_SIZE": 16,
     "IMG_SIZE": 384,
     "SEED": 41,
     "age":{
-        "EPOCHS": 100
+        "EPOCHS": 100,
+        "BATCH_SIZE": 16
     },
     "gender":{
-        "EPOCHS": 50
+        "EPOCHS": 50,
+        "BATCH_SIZE": 16
     },
     "mask":{
-        "EPOCHS": 30
+        "EPOCHS": 30,
+        "BATCH_SIZE": 128
+    },
+    "test":{
+        "BATCH_SIZE": 512
     }
 }

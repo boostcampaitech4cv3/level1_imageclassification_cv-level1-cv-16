@@ -18,14 +18,17 @@ def inference(model, custom_loader, device):
     mask_preds = []
 
     with torch.no_grad():
-        for img, label, path in tqdm(iter(custom_loader)):
-            img = img.float().to(device)
+        for age_img, gender_img, mask_img, label, path in tqdm(iter(custom_loader)):
+            age_img = age_img.float().to(device)
+            gender_img = gender_img.float().to(device)
+            mask_img = mask_img.float().to(device)
+            
             age, gender, mask = label
             age = age.long().to(device)
             gender = gender.long().to(device)
             mask = mask.long().to(device)
             
-            age_pred, gender_pred, mask_pred = model(img)
+            age_pred, gender_pred, mask_pred = model(age_img, gender_img, mask_img)
             
             age_pred = age_pred.argmax(1).detach().cpu().numpy().tolist()
             gender_pred = gender_pred.argmax(1).detach().cpu().numpy().tolist()
@@ -41,7 +44,7 @@ def inference(model, custom_loader, device):
                     
                 if m!=mp:
                     tmp = cv2.imread(path)
-                    path = "_".joinpath.split('/')[-3:]
+                    path = "_".join(path.split('/')[-3:])
                     path = path.rstrip(".jpg")
                     cv2.imwrite(f"Error/mask/{path}-{mp}.jpg", tmp)
             
@@ -60,10 +63,10 @@ if __name__ == "__main__":
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    model = Ensemble(20) ## exp dir
+    model = Ensemble(15) ## exp dir
     
-    custom_dataset = Viz_Dataset(cfg)
-    custom_loader = DataLoader(custom_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)
+    custom_dataset = Viz_Dataset(True)
+    custom_loader = DataLoader(custom_dataset, batch_size=cfg['test']['BATCH_SIZE'], shuffle=False, num_workers=0)
     
     preds = inference(model, custom_loader, device)
     

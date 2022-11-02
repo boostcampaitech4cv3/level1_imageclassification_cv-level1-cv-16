@@ -69,10 +69,10 @@ class Ensemble(nn.Module):
         self.gender = torch.load(f"exp/{exp}/gender/best.pt")
         self.mask = torch.load(f"exp/{exp}/mask/best.pt")
         
-    def forward(self, x):
+    def forward(self, x, y, z):
         age = self.age(x)
-        gender = self.gender(x)
-        mask = self.mask(x)
+        gender = self.gender(y)
+        mask = self.mask(z)
         
         return age, gender, mask
     

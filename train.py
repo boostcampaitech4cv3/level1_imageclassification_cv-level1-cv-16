@@ -13,7 +13,7 @@ import torch.backends.cudnn as cudnn
 from ema_pytorch import EMA
 from optim.sam import SAM
 
-from loss.focal import FocalLossWithSmoothing
+from loss.focal import Focal_Loss
 
 import warnings
 warnings.filterwarnings(action='ignore')
@@ -135,20 +135,20 @@ def exp_generator():
 # import pprint
 # pprint.pprint(timm.models.list_models())
 
-train_age_dataset = Age_Dataset(cfg)
-train_age_loader = DataLoader(train_age_dataset, batch_size = cfg['BATCH_SIZE'], shuffle=True, num_workers=0)
-val_age_dataset = Age_Dataset(cfg, val=True)
-val_age_loader = DataLoader(val_age_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)
+train_age_dataset = Age_Dataset()
+train_age_loader = DataLoader(train_age_dataset, batch_size = cfg['age']['BATCH_SIZE'], shuffle=True, num_workers=0)
+val_age_dataset = Age_Dataset(val=True)
+val_age_loader = DataLoader(val_age_dataset, batch_size=cfg['age']['BATCH_SIZE'], shuffle=False, num_workers=0)
 
-train_gender_dataset = Gender_Dataset(cfg)
-train_gender_loader = DataLoader(train_gender_dataset, batch_size = cfg['BATCH_SIZE'], shuffle=True, num_workers=0)
-val_gender_dataset = Gender_Dataset(cfg, val=True)
-val_gender_loader = DataLoader(val_gender_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)
+train_gender_dataset = Gender_Dataset()
+train_gender_loader = DataLoader(train_gender_dataset, batch_size = cfg['gender']['BATCH_SIZE'], shuffle=True, num_workers=0)
+val_gender_dataset = Gender_Dataset(val=True)
+val_gender_loader = DataLoader(val_gender_dataset, batch_size=cfg['gender']['BATCH_SIZE'], shuffle=False, num_workers=0)
 
-train_mask_dataset = Mask_Dataset(cfg)
-train_mask_loader = DataLoader(train_mask_dataset, batch_size = cfg['BATCH_SIZE'], shuffle=True, num_workers=0)
-val_mask_dataset = Mask_Dataset(cfg, val=True)
-val_mask_loader = DataLoader(val_mask_dataset, batch_size=cfg['BATCH_SIZE'], shuffle=False, num_workers=0)
+train_mask_dataset = Mask_Dataset()
+train_mask_loader = DataLoader(train_mask_dataset, batch_size = cfg['mask']['BATCH_SIZE'], shuffle=True, num_workers=0)
+val_mask_dataset = Mask_Dataset(val=True)
+val_mask_loader = DataLoader(val_mask_dataset, batch_size=cfg['mask']['BATCH_SIZE'], shuffle=False, num_workers=0)
 
 last = exp_generator()
 # last = 12
@@ -157,7 +157,7 @@ scheduler = None
 
 print(">> Age Clasification -----------------------")
 model = Age_Model(num_classes=train_age_dataset.num_classes)
-criterion = FocalLossWithSmoothing(train_age_dataset.num_classes, 3, 0.1).to(device)
+criterion = Focal_Loss(gamma = 2).to(device)
 base_optimizer = torch.optim.SGD
 optimizer = SAM(model.parameters(), base_optimizer, lr=0.001, momentum=0.9, nesterov = True)
 age_model = train("age", model, optimizer, criterion, train_age_loader, val_age_loader, scheduler, device)
@@ -166,7 +166,7 @@ torch.cuda.empty_cache()
 
 print(">> Gender Clasification -----------------------")
 model = Gender_Model(num_classes=train_gender_dataset.num_classes)
-criterion = FocalLossWithSmoothing(train_gender_dataset.num_classes, 2, 0.2).to(device)
+criterion = Focal_Loss(gamma = 2).to(device)
 base_optimizer = torch.optim.SGD
 optimizer = SAM(model.parameters(), base_optimizer, lr=0.001, momentum=0.9, nesterov = True)
 gender_model = train("gender", model, optimizer, criterion, train_gender_loader, val_gender_loader, scheduler, device)
@@ -176,7 +176,7 @@ torch.cuda.empty_cache()
 
 print(">> Mask Clasification -----------------------")
 model = Mask_Model(num_classes=train_mask_dataset.num_classes)
-criterion = FocalLossWithSmoothing(train_mask_dataset.num_classes, 2, 0.1).to(device)
+criterion = Focal_Loss(gamma = 2).to(device)
 base_optimizer = torch.optim.SGD
 optimizer = SAM(model.parameters(), base_optimizer, lr=0.001, momentum=0.9, nesterov = True)
 mask_model = train("mask", model, optimizer, criterion, train_mask_loader, val_mask_loader, scheduler, device)
