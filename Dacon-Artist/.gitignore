@@ -1,0 +1,5 @@
+*.jpg
+*.csv
+.ipynb_checkpoints/\[Baseline\]_사전학습 모델 Efficientnet B0를 활용한 이미지 분류-checkpoint.ipynb
+__pycache__/
+*.pt
